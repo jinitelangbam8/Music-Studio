@@ -1,11 +1,12 @@
 import React from 'react';
-import { Play, MoreVertical, Trash2 } from 'lucide-react';
+import { Play, MoreVertical, Trash2, Download } from 'lucide-react';
 import { Song, useMusic } from '@/lib/MusicContext';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { db, auth } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -29,6 +30,16 @@ export const SongCard: React.FC<SongCardProps> = ({ song, onDelete }) => {
     } catch (error) {
       console.error('Error deleting song:', error);
     }
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const link = document.createElement('a');
+    link.href = song.url;
+    link.download = `${song.title} - ${song.artist}.mp3`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -55,6 +66,14 @@ export const SongCard: React.FC<SongCardProps> = ({ song, onDelete }) => {
               <MoreVertical size={16} />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-spotify-light border-white/10 text-white">
+              <DropdownMenuItem 
+                onClick={handleDownload}
+                className="focus:bg-white/10 cursor-pointer"
+              >
+                <Download size={16} className="mr-2" />
+                <span>Download</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/5" />
               <DropdownMenuItem 
                 onClick={handleDelete}
                 className="text-red-400 focus:text-red-400 focus:bg-white/10 cursor-pointer"

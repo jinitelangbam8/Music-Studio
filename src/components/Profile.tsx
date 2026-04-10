@@ -1,29 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { User, Mail, Calendar, Music } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { User, Mail, Calendar, Music, Edit2, Loader2 } from 'lucide-react';
 
 export const Profile = () => {
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhoto, setEditPhoto] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  const fetchUserData = async () => {
+    if (auth.currentUser) {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUserData(data);
+        setEditName(data.displayName || '');
+        setEditPhoto(data.photoURL || '');
+      }
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (auth.currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
-        }
-      }
-      setLoading(false);
-    };
-
     fetchUserData();
   }, []);
+
+  const handleUpdateProfile = async () => {
+    if (!auth.currentUser) return;
+    setUpdating(true);
+    try {
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        displayName: editName,
+        photoURL: editPhoto
+      });
+      await fetchUserData();
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -62,9 +96,9 @@ export const Profile = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-spotify-dark border-white/5 col-span-2">
+          <Card className="bg-spotify-dark border-white/5 col-span-2 text-white">
             <CardHeader>
-              <CardTitle className="text-xl">Account Details</CardTitle>
+              <CardTitle className="text-xl text-white">Account Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
@@ -72,7 +106,7 @@ export const Profile = () => {
                   <User size={18} />
                   <span>Display Name</span>
                 </div>
-                <span className="font-semibold">{userData.displayName}</span>
+                <span className="font-semibold text-white">{userData.displayName}</span>
               </div>
               <Separator className="bg-white/5" />
               <div className="flex items-center justify-between">
@@ -80,7 +114,7 @@ export const Profile = () => {
                   <Mail size={18} />
                   <span>Email</span>
                 </div>
-                <span className="font-semibold">{userData.email}</span>
+                <span className="font-semibold text-white">{userData.email}</span>
               </div>
               <Separator className="bg-white/5" />
               <div className="flex items-center justify-between">
@@ -88,21 +122,68 @@ export const Profile = () => {
                   <Calendar size={18} />
                   <span>Member Since</span>
                 </div>
-                <span className="font-semibold">
+                <span className="font-semibold text-white">
                   {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-spotify-dark border-white/5">
+          <Card className="bg-spotify-dark border-white/5 text-white">
             <CardHeader>
-              <CardTitle className="text-xl">Settings</CardTitle>
+              <CardTitle className="text-xl text-white">Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full border-white/10 hover:bg-white/5 text-white">
-                Edit Profile
-              </Button>
+              <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full border-white/10 hover:bg-white/5 text-white">
+                    <Edit2 size={16} className="mr-2" />
+                    Edit Profile
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-spotify-dark border-white/10 text-white">
+                  <DialogHeader>
+                    <DialogTitle>Edit Profile</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Display Name</Label>
+                      <Input 
+                        id="name" 
+                        value={editName} 
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="bg-spotify-light border-white/10 focus:border-spotify-green"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="photo">Photo URL</Label>
+                      <Input 
+                        id="photo" 
+                        value={editPhoto} 
+                        onChange={(e) => setEditPhoto(e.target.value)}
+                        className="bg-spotify-light border-white/10 focus:border-spotify-green"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setIsEditing(false)}
+                      className="text-white hover:bg-white/5"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleUpdateProfile}
+                      disabled={updating}
+                      className="bg-spotify-green text-black hover:bg-spotify-green/90 font-bold"
+                    >
+                      {updating ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
+                      Save Changes
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" className="w-full border-white/10 hover:bg-white/5 text-white">
                 Privacy Settings
               </Button>
