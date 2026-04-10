@@ -26,11 +26,6 @@ app.get('/api/songs', (req, res) => {
 app.get('/api/stream/:id', (req, res) => {
   const songId = req.params.id;
   const musicDir = path.join(process.cwd(), 'music');
-  
-  if (!fs.existsSync(musicDir)) {
-    fs.mkdirSync(musicDir, { recursive: true });
-  }
-  
   const filePath = path.join(musicDir, `song-${songId}.mp3`);
   
   if (!fs.existsSync(filePath)) {
