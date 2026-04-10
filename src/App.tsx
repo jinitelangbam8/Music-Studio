@@ -3,23 +3,51 @@ import { Sidebar } from '@/components/Sidebar';
 import { Player } from '@/components/Player';
 import { SongCard } from '@/components/SongCard';
 import { Auth } from '@/components/Auth';
+import { Profile } from '@/components/Profile';
 import { MusicProvider, useMusic, Song } from '@/lib/MusicContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, query, limit } from 'firebase/firestore';
 
-const HomeContent = () => {
+const HomeContent = ({ onViewProfile }: { onViewProfile: () => void }) => {
   const [songs, setSongs] = useState<Song[]>([]);
   const { setPlaylist } = useMusic();
 
+  const fetchSongs = async () => {
+    try {
+      const q = query(collection(db, 'songs'), limit(50));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        // Seed initial songs if collection is empty
+        const initialSongs = await fetch('/api/songs').then(res => res.json());
+        for (const song of initialSongs) {
+          await addDoc(collection(db, 'songs'), song);
+        }
+        fetchSongs(); // Re-fetch after seeding
+        return;
+      }
+
+      const songsData = querySnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      })) as Song[];
+      
+      setSongs(songsData);
+      setPlaylist(songsData);
+    } catch (error) {
+      console.error('Error fetching songs:', error);
+    }
+  };
+
   useEffect(() => {
-    fetch('/api/songs')
-      .then(res => res.json())
-      .then(data => {
-        setSongs(data);
-        setPlaylist(data);
-      })
-      .catch(console.error);
+    fetchSongs();
   }, [setPlaylist]);
+
+  const handleDeleteSong = (id: string) => {
+    setSongs(prev => prev.filter(s => s.id !== id));
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-gradient-to-b from-spotify-light/50 to-spotify-black">
@@ -33,7 +61,7 @@ const HomeContent = () => {
             <ChevronRight size={24} />
           </button>
         </div>
-        <Auth />
+        <Auth onViewProfile={onViewProfile} />
       </header>
 
       <ScrollArea className="flex-1 px-8 pb-8 spotify-scroll">
@@ -62,7 +90,7 @@ const HomeContent = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
               {songs.map(song => (
-                <SongCard key={song.id} song={song} />
+                <SongCard key={song.id} song={song} onDelete={handleDeleteSong} />
               ))}
             </div>
           </section>
@@ -73,11 +101,22 @@ const HomeContent = () => {
 };
 
 export default function App() {
+  const [view, setView] = useState<'home' | 'profile'>('home');
+
   return (
     <MusicProvider>
       <div className="flex h-screen overflow-hidden select-none">
-        <Sidebar />
-        <HomeContent />
+        <Sidebar onHomeClick={() => setView('home')} currentView={view} />
+        {view === 'home' ? (
+          <HomeContent onViewProfile={() => setView('profile')} />
+        ) : (
+          <div className="flex-1 flex flex-col min-w-0">
+            <header className="h-16 flex items-center justify-end px-8 sticky top-0 z-10 bg-spotify-black/20 backdrop-blur-sm">
+              <Auth onViewProfile={() => setView('profile')} />
+            </header>
+            <Profile />
+          </div>
+        )}
       </div>
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <Player />

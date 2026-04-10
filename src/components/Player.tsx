@@ -1,15 +1,22 @@
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, Maximize2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, X } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { useMusic } from '@/lib/MusicContext';
 
 export const Player = () => {
-  const { currentSong, isPlaying, progress, volume, togglePlay, nextSong, prevSong, seek, setVolume } = useMusic();
+  const { currentSong, isPlaying, progress, volume, togglePlay, nextSong, prevSong, seek, setVolume, closePlayer } = useMusic();
 
   if (!currentSong) return null;
 
   return (
-    <div className="h-24 bg-black border-t border-white/10 px-4 flex items-center justify-between">
+    <div className="h-24 bg-black border-t border-white/10 px-4 flex items-center justify-between relative group/player">
+      <button 
+        onClick={closePlayer}
+        className="absolute -top-3 right-4 w-6 h-6 bg-spotify-light rounded-full flex items-center justify-center opacity-0 group-hover/player:opacity-100 transition-opacity hover:bg-white hover:text-black shadow-lg z-50"
+      >
+        <X size={14} />
+      </button>
+
       {/* Song Info */}
       <div className="flex items-center gap-4 w-1/3">
         <img src={currentSong.thumbnail} alt={currentSong.title} className="w-14 h-14 rounded-md object-cover shadow-lg" />
@@ -39,7 +46,7 @@ export const Player = () => {
             {formatTime((progress / 100) * currentSong.duration)}
           </span>
           <Slider 
-            value={[progress]} 
+            value={[isFinite(progress) ? progress : 0]} 
             max={100} 
             step={0.1} 
             onValueChange={(val) => seek(val[0])}
@@ -54,13 +61,15 @@ export const Player = () => {
       {/* Volume & Extra */}
       <div className="flex items-center justify-end gap-3 w-1/3">
         <Volume2 size={18} className="text-spotify-gray" />
-        <Slider 
-          value={[volume * 100]} 
-          max={100} 
-          onValueChange={(val) => setVolume(val[0] / 100)}
-          className="w-24"
+        <input 
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
+          onChange={(e) => setVolume(parseFloat(e.target.value))}
+          className="w-24 accent-spotify-green h-1 cursor-pointer"
         />
-        <Maximize2 size={18} className="text-spotify-gray hover:text-white cursor-pointer" />
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, User as UserIcon } from 'lucide-react';
 
-export const Auth = () => {
+export const Auth = ({ onViewProfile }: { onViewProfile?: () => void }) => {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -52,17 +52,15 @@ export const Auth = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <div className="flex items-center gap-2 bg-black/50 hover:bg-white/10 p-1 pr-3 rounded-full cursor-pointer transition-colors">
-          <Avatar className="w-7 h-7">
-            <AvatarImage src={user.photoURL} />
-            <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-bold truncate max-w-[100px]">{user.displayName}</span>
-        </div>
+      <DropdownMenuTrigger className="flex items-center gap-2 bg-black/50 hover:bg-white/10 p-1 pr-3 rounded-full cursor-pointer transition-colors border-none outline-none">
+        <Avatar className="w-7 h-7">
+          <AvatarImage src={user.photoURL} />
+          <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
+        </Avatar>
+        <span className="text-sm font-bold truncate max-w-[100px]">{user.displayName}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-spotify-light border-white/10 text-white w-48">
-        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+        <DropdownMenuItem onClick={onViewProfile} className="focus:bg-white/10 cursor-pointer">
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>

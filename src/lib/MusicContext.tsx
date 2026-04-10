@@ -22,6 +22,7 @@ interface MusicContextType {
   setVolume: (value: number) => void;
   playlist: Song[];
   setPlaylist: (songs: Song[]) => void;
+  closePlayer: () => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -42,8 +43,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const audio = audioRef.current;
 
     const updateProgress = () => {
-      if (audio.duration) {
-        setProgress((audio.currentTime / audio.duration) * 100);
+      if (audio.duration && isFinite(audio.duration)) {
+        const newProgress = (audio.currentTime / audio.duration) * 100;
+        if (isFinite(newProgress)) {
+          setProgress(newProgress);
+        }
       }
     };
 
@@ -62,8 +66,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
+    if (audioRef.current && isFinite(volume)) {
+      audioRef.current.volume = Math.max(0, Math.min(1, volume));
     }
   }, [volume]);
 
@@ -106,15 +110,28 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const seek = (value: number) => {
-    if (audioRef.current && audioRef.current.duration) {
+    if (audioRef.current && audioRef.current.duration && isFinite(audioRef.current.duration) && isFinite(value)) {
       const time = (value / 100) * audioRef.current.duration;
-      audioRef.current.currentTime = time;
-      setProgress(value);
+      if (isFinite(time)) {
+        audioRef.current.currentTime = time;
+        setProgress(value);
+      }
     }
   };
 
   const setVolume = (value: number) => {
-    setVolumeState(value);
+    if (isFinite(value)) {
+      setVolumeState(Math.max(0, Math.min(1, value)));
+    }
+  };
+
+  const closePlayer = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+    setCurrentSong(null);
+    setIsPlaying(false);
   };
 
   return (
@@ -130,7 +147,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       seek,
       setVolume,
       playlist,
-      setPlaylist
+      setPlaylist,
+      closePlayer
     }}>
       {children}
     </MusicContext.Provider>

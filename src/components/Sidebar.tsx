@@ -2,10 +2,10 @@ import React from 'react';
 import { Home, Search, Library, Plus, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const Sidebar = () => {
+export const Sidebar = ({ onHomeClick, currentView }: { onHomeClick?: () => void, currentView?: string }) => {
   return (
     <div className="w-64 bg-black h-full flex flex-col p-6 gap-6">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={onHomeClick}>
         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
           <div className="w-4 h-4 bg-black rounded-sm" />
         </div>
@@ -13,7 +13,12 @@ export const Sidebar = () => {
       </div>
 
       <nav className="flex flex-col gap-4">
-        <SidebarItem icon={<Home size={24} />} label="Home" active />
+        <SidebarItem 
+          icon={<Home size={24} />} 
+          label="Home" 
+          active={currentView === 'home'} 
+          onClick={onHomeClick}
+        />
         <SidebarItem icon={<Search size={24} />} label="Search" />
         <SidebarItem icon={<Library size={24} />} label="Your Library" />
       </nav>
@@ -31,8 +36,10 @@ export const Sidebar = () => {
   );
 };
 
-const SidebarItem = ({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) => (
-  <div className={cn(
+const SidebarItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) => (
+  <div 
+    onClick={onClick}
+    className={cn(
     "flex items-center gap-4 cursor-pointer transition-colors font-semibold",
     active ? "text-white" : "text-spotify-gray hover:text-white"
   )}>

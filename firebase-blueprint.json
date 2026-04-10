@@ -25,6 +25,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "userId"]
+    },
+    "Song": {
+      "title": "Song",
+      "description": "Music track information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "duration": { "type": "number" },
+        "url": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "addedBy": { "type": "string" }
+      },
+      "required": ["title", "artist", "url"]
     }
   },
   "firestore": {
@@ -35,6 +50,10 @@
     "/playlists/{playlistId}": {
       "schema": "Playlist",
       "description": "User playlists"
+    },
+    "/songs/{songId}": {
+      "schema": "Song",
+      "description": "Music tracks"
     }
   }
 }
